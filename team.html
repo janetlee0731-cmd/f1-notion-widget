@@ -11,7 +11,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      /* 預設變數，由 JS 依據各車隊主題動態覆寫 */
       --card-bg: #0d0d11;
       --surface: #17171e;
       --surface-hover: #21212b;
@@ -96,7 +95,15 @@
       text-transform: uppercase;
       display: inline-flex;
       align-items: center;
-      gap: 7px;
+      gap: 8px;
+    }
+
+    .header-team-logo {
+      width: 22px;
+      height: 22px;
+      object-fit: contain;
+      border-radius: 3px;
+      display: inline-block;
     }
 
     .team-diamond {
@@ -382,11 +389,12 @@
     }
 
     .mini-team-logo {
-      width: 16px;
-      height: 16px;
+      width: 18px;
+      height: 18px;
       object-fit: contain;
+      border-radius: 2px;
       display: inline-block;
-      filter: drop-shadow(0 1px 1px rgba(0,0,0,0.15));
+      filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.15));
     }
 
     /* 智慧防破圖縮寫徽章（Fallback） */
@@ -402,7 +410,7 @@
       align-items: center;
       justify-content: center;
       min-width: 26px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     }
 
     /* 積分榜名次徽章 */
@@ -606,23 +614,114 @@
       }
     };
 
-    // 車隊代表色、縮寫與隊標圖片字典（若有上傳本機圖檔會優先載入）
+    // 多重圖片備援字典：依序嘗試儲存庫內 logos/ 圖檔 -> Issue 圖床網址 -> 根目錄圖檔
     const TEAM_INFO = {
-      ferrari:      { code: 'SF',  color: '#E8002D', textColor: '#FFFFFF', logo: 'https://github.com/user-attachments/assets/6493218c-1096-40ac-8405-2a7e387e24af' },
-      mclaren:      { code: 'MCL', color: '#FF8000', textColor: '#000000', logo: 'https://github.com/user-attachments/assets/a2d12676-d2a7-4e1e-ac0c-417e2daba323' },
-      red_bull:     { code: 'RBR', color: '#001A30', textColor: '#FCD700', logo: 'https://github.com/user-attachments/assets/2225fa52-eed0-4360-9aae-7b5c58bd627e' },
-      mercedes:     { code: 'MER', color: '#00A19C', textColor: '#000000', logo: 'https://github.com/user-attachments/assets/154a4d43-7e67-4e4c-993a-78b9a4c5e2d7' },
-      aston_martin: { code: 'AMR', color: '#00594F', textColor: '#CEDC00', logo: 'logos/aston_martin.png' },
-      alpine:       { code: 'ALP', color: '#0090FF', textColor: '#FFFFFF', logo: 'logos/alpine.png' },
-      williams:     { code: 'WIL', color: '#005AFF', textColor: '#FFFFFF', logo: 'logos/williams.png' },
-      haas:         { code: 'HAS', color: '#E6002B', textColor: '#FFFFFF', logo: 'logos/haas.png' },
-      sauber:       { code: 'SAU', color: '#52E252', textColor: '#000000', logo: 'logos/sauber.png' },
-      kick_sauber:  { code: 'SAU', color: '#52E252', textColor: '#000000', logo: 'logos/sauber.png' },
-      rb:           { code: 'VCARB', color: '#1634CB', textColor: '#FFFFFF', logo: 'logos/rb.png' },
-      racing_bulls: { code: 'VCARB', color: '#1634CB', textColor: '#FFFFFF', logo: 'logos/rb.png' },
-      audi:         { code: 'AUD', color: '#F50537', textColor: '#FFFFFF', logo: 'logos/audi.png' },
-      cadillac:     { code: 'CAD', color: '#D4AF37', textColor: '#000000', logo: 'logos/cadillac.png' }
+      ferrari: {
+        code: 'SF', color: '#E8002D', textColor: '#FFFFFF',
+        logos: [
+          'logos/ferrari.png',
+          'https://github.com/user-attachments/assets/6493218c-1096-40ac-8405-2a7e387e24af',
+          'ferrari.png'
+        ]
+      },
+      mclaren: {
+        code: 'MCL', color: '#FF8000', textColor: '#000000',
+        logos: [
+          'logos/mclaren.png',
+          'https://github.com/user-attachments/assets/a2d12676-d2a7-4e1e-ac0c-417e2daba323',
+          'mclaren.png'
+        ]
+      },
+      red_bull: {
+        code: 'RBR', color: '#001A30', textColor: '#FCD700',
+        logos: [
+          'logos/red_bull.png',
+          'https://github.com/user-attachments/assets/2225fa52-eed0-4360-9aae-7b5c58bd627e',
+          'red_bull.png'
+        ]
+      },
+      mercedes: {
+        code: 'MER', color: '#00A19C', textColor: '#000000',
+        logos: [
+          'logos/mercedes.png',
+          'https://github.com/user-attachments/assets/154a4d43-7e67-4e4c-993a-78b9a4c5e2d7',
+          'mercedes.png'
+        ]
+      },
+      aston_martin: {
+        code: 'AMR', color: '#00594F', textColor: '#CEDC00',
+        logos: [
+          'aston_martin.png',
+          'logos/aston_martin.png'
+        ]
+      },
+      alpine:       { code: 'ALP',   color: '#0090FF', textColor: '#FFFFFF', logos: ['logos/alpine.png', 'alpine.png'] },
+      williams:     { code: 'WIL',   color: '#005AFF', textColor: '#FFFFFF', logos: ['logos/williams.png', 'williams.png'] },
+      haas:         { code: 'HAS',   color: '#E6002B', textColor: '#FFFFFF', logos: ['logos/haas.png', 'haas.png'] },
+      sauber:       { code: 'SAU',   color: '#52E252', textColor: '#000000', logos: ['logos/sauber.png', 'sauber.png'] },
+      kick_sauber:  { code: 'SAU',   color: '#52E252', textColor: '#000000', logos: ['logos/sauber.png', 'sauber.png'] },
+      rb:           { code: 'VCARB', color: '#1634CB', textColor: '#FFFFFF', logos: ['logos/rb.png', 'rb.png'] },
+      racing_bulls: { code: 'VCARB', color: '#1634CB', textColor: '#FFFFFF', logos: ['logos/rb.png', 'rb.png'] },
+      audi:         { code: 'AUD',   color: '#F50537', textColor: '#FFFFFF', logos: ['logos/audi.png', 'audi.png'] },
+      cadillac:     { code: 'CAD',   color: '#D4AF37', textColor: '#000000', logos: ['logos/cadillac.png', 'cadillac.png'] }
     };
+
+    // 當圖片載入失敗時，自動切換嘗試清單中的下一個網址
+    function handleLogoError(img) {
+      const urls = (img.dataset.urls || '').split('|').filter(Boolean);
+      const nextIdx = parseInt(img.dataset.idx || '0', 10) + 1;
+      if (nextIdx < urls.length) {
+        img.dataset.idx = nextIdx;
+        img.src = urls[nextIdx];
+      } else {
+        img.style.display = 'none';
+      }
+    }
+
+    // 產生主卡片頂部標題列的車隊隊標
+    function generateHeaderLogo(teamId) {
+      const info = TEAM_INFO[teamId] || { code: 'F1', logos: [] };
+      const urls = info.logos || [];
+      if (urls.length === 0) {
+        return `<span class="team-diamond"></span>`;
+      }
+      return `
+        <img src="${urls[0]}"
+             data-urls="${urls.join('|')}"
+             data-idx="0"
+             class="header-team-logo"
+             alt="${info.code}"
+             referrerpolicy="no-referrer"
+             onload="if(this.nextElementSibling) this.nextElementSibling.style.display='none';"
+             onerror="handleLogoError(this)">
+        <span class="team-diamond"></span>
+      `;
+    }
+
+    // 產生積分榜列表內的隊標（含縮寫備援）
+    function generateTeamBadge(teamId) {
+      const info = TEAM_INFO[teamId] || { code: 'F1', color: '#787774', textColor: '#FFFFFF', logos: [] };
+      const fallbackBadge = `<span class="team-badge-fallback" style="background-color: ${info.color}; color: ${info.textColor};">${info.code}</span>`;
+      const urls = info.logos || [];
+
+      if (urls.length === 0) {
+        return `<span class="team-logo-container">${fallbackBadge}</span>`;
+      }
+
+      return `
+        <span class="team-logo-container">
+          <img src="${urls[0]}"
+               data-urls="${urls.join('|')}"
+               data-idx="0"
+               class="mini-team-logo"
+               alt="${info.code}"
+               referrerpolicy="no-referrer"
+               onload="if(this.nextElementSibling) this.nextElementSibling.style.display='none';"
+               onerror="handleLogoError(this)">
+          ${fallbackBadge}
+        </span>
+      `;
+    }
 
     const urlParams = new URLSearchParams(window.location.search);
     const selectedTeamKey = (urlParams.get('team') || 'ferrari').toLowerCase();
@@ -765,7 +864,7 @@
         renderNextRaceCard(nextRace);
       } else {
         document.getElementById('next-race-container').innerHTML =
-          `<div class="next-race-card"><div class="team-badge-title">${currentTheme.brandName}</div><div class="race-title">本賽季已全數完賽</div></div>`;
+          `<div class="next-race-card"><div class="team-badge-title">${generateHeaderLogo(currentTheme.id)}${currentTheme.brandName}</div><div class="race-title">本賽季已全數完賽</div></div>`;
       }
     }
 
@@ -806,8 +905,8 @@
         <div class="next-race-card">
           <div class="brand-bar">
             <div class="team-badge-title">
-              <span class="team-diamond"></span>
-              ${currentTheme.brandName}
+              ${generateHeaderLogo(currentTheme.id)}
+              <span>${currentTheme.brandName}</span>
             </div>
             <span class="round-pill mono">${race.season} • ROUND ${String(race.round).padStart(2, '0')}</span>
           </div>
@@ -865,25 +964,6 @@
       document.getElementById('cd-hours').innerText = String(hours).padStart(2, '0');
       document.getElementById('cd-mins').innerText = String(mins).padStart(2, '0');
       document.getElementById('cd-secs').innerText = String(secs).padStart(2, '0');
-    }
-
-    // 隊標產生器：優先載入圖檔，若未上傳或破圖則無縫回退顯示 F1 車隊縮寫徽章
-    function generateTeamBadge(teamId) {
-      const info = TEAM_INFO[teamId] || { code: 'F1', color: '#787774', textColor: '#FFFFFF', logo: '' };
-      const fallbackBadge = `<span class="team-badge-fallback" style="background-color: ${info.color}; color: ${info.textColor};">${info.code}</span>`;
-
-      if (!info.logo) {
-        return `<span class="team-logo-container">${fallbackBadge}</span>`;
-      }
-
-      return `
-        <span class="team-logo-container">
-          <img src="${info.logo}" class="mini-team-logo" alt="${info.code}"
-               onload="this.nextElementSibling.style.display='none';"
-               onerror="this.style.display='none';">
-          ${fallbackBadge}
-        </span>
-      `;
     }
 
     // 車手積分榜
