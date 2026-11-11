@@ -6,12 +6,11 @@
   <title>F1 Team Telemetry Widget</title>
   <!-- F1 官方字體庫 -->
   <link href="https://fonts.cdnfonts.com/css/formula1" rel="stylesheet">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      /* 預設變數，由 JS 依據 URL 參數動態覆寫 */
+      /* 預設變數，由 JS 依據各車隊主題動態覆寫 */
       --card-bg: #0d0d11;
       --surface: #17171e;
       --surface-hover: #21212b;
@@ -25,7 +24,7 @@
       --accent-soft: rgba(232, 0, 45, 0.14);
       --border-accent: rgba(232, 0, 45, 0.45);
 
-      --shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
       --done-opacity: 0.38;
     }
 
@@ -92,7 +91,7 @@
       font-size: 13px;
       font-weight: 900;
       letter-spacing: 1px;
-      color: var(--team-accent);
+      color: var(--team-primary);
       text-transform: uppercase;
       display: inline-flex;
       align-items: center;
@@ -110,7 +109,7 @@
     .round-pill {
       font-size: 10px;
       font-weight: 700;
-      color: var(--team-accent);
+      color: var(--team-primary);
       background: var(--accent-soft);
       border: 1px solid var(--border-accent);
       padding: 3px 8px;
@@ -150,7 +149,7 @@
       font-weight: 700;
       letter-spacing: 0.2px;
       margin-bottom: 2px;
-      color: #ffffff;
+      color: var(--text);
     }
 
     .race-meta {
@@ -187,14 +186,14 @@
 
     .session-pill:hover {
       background: var(--surface-hover);
-      border-color: rgba(255, 255, 255, 0.2);
+      border-color: var(--border-accent);
       transform: translateY(-1px);
     }
 
     .session-pill.active {
-      border-color: var(--team-accent);
+      border-color: var(--team-primary);
       background: var(--accent-soft);
-      box-shadow: 0 0 10px rgba(255, 255, 255, 0.08);
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
     }
 
     .session-pill.past {
@@ -245,7 +244,7 @@
       font-size: 20px;
       font-weight: 700;
       line-height: 1.2;
-      color: var(--team-accent);
+      color: var(--team-primary);
     }
 
     .time-label {
@@ -281,14 +280,14 @@
     }
 
     .tab-btn:hover {
-      color: #ffffff;
+      color: var(--text);
     }
 
     .tab-btn.active {
       background: var(--surface);
-      color: var(--team-accent);
+      color: var(--team-primary);
       border: 1px solid var(--border-accent);
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
     }
 
     /* 列表面板與極細捲軸 */
@@ -311,12 +310,13 @@
     }
 
     .list-panel::-webkit-scrollbar-thumb {
-      background: rgba(142, 146, 155, 0.3);
+      background: var(--subtext);
+      opacity: 0.3;
       border-radius: 99px;
     }
 
     .list-panel::-webkit-scrollbar-thumb:hover {
-      background: var(--team-accent);
+      background: var(--team-primary);
     }
 
     .hidden {
@@ -354,7 +354,7 @@
     /* 專屬車隊高亮行 */
     .list-item.target-team-row {
       background: var(--accent-soft);
-      border-left: 3px solid var(--team-accent);
+      border-left: 3px solid var(--team-primary);
     }
 
     .round-tag {
@@ -438,7 +438,7 @@
     .points-badge {
       font-size: 12px;
       font-weight: 700;
-      color: #ffffff;
+      color: var(--text);
     }
 
     .points-unit {
@@ -475,64 +475,100 @@
   </div>
 
   <script>
-    // 車隊塗裝色彩配置庫
+    // 車隊塗裝色彩配置庫：法拉利與麥拉倫設定為淺色模式，其餘維持經典暗色模式
     const THEMES = {
+      // 1. 法拉利（淺色義大利米白 + 標誌性 Rosso Corsa 艷紅）
       ferrari: {
         id: 'ferrari',
         brandName: 'SCUDERIA FERRARI',
-        cardBg: '#120507',
-        surface: '#1c0a0e',
-        surfaceHover: '#291117',
+        cardBg: '#fdf8f8',
+        surface: '#ffffff',
+        surfaceHover: '#faeeee',
+        text: '#231a1b',
+        subtext: '#7e6466',
+        border: 'rgba(232, 0, 45, 0.12)',
         primary: '#E8002D',   // Rosso Corsa 紅
-        accent: '#FFF200',    // 摩德納黃
-        stripe: 'linear-gradient(180deg, #E8002D 0%, #FFF200 100%)',
-        accentSoft: 'rgba(232, 0, 45, 0.14)',
-        borderAccent: 'rgba(255, 242, 0, 0.45)'
+        accent: '#D49400',    // 摩德納黃（淺色易讀金色）
+        stripe: 'linear-gradient(180deg, #E8002D 0%, #FFD700 100%)',
+        accentSoft: 'rgba(232, 0, 45, 0.08)',
+        borderAccent: 'rgba(232, 0, 45, 0.32)'
       },
+      // 2. 麥拉倫（淺色木瓜奶油 + Papaya 木瓜橘）
       mclaren: {
         id: 'mclaren',
         brandName: 'McLAREN F1 TEAM',
-        cardBg: '#0f0c08',
-        surface: '#1c160e',
-        surfaceHover: '#2a2217',
+        cardBg: '#fdfaf5',
+        surface: '#ffffff',
+        surfaceHover: '#fbf1e4',
+        text: '#282017',
+        subtext: '#827364',
+        border: 'rgba(255, 128, 0, 0.15)',
         primary: '#FF8000',   // 木瓜橘
-        accent: '#47C7FC',    // 競速水藍
-        stripe: 'linear-gradient(180deg, #FF8000 0%, #47C7FC 100%)',
-        accentSoft: 'rgba(255, 128, 0, 0.14)',
-        borderAccent: 'rgba(255, 128, 0, 0.45)'
+        accent: '#0083B8',    // 賽車海灣藍
+        stripe: 'linear-gradient(180deg, #FF8000 0%, #00A3E0 100%)',
+        accentSoft: 'rgba(255, 128, 0, 0.09)',
+        borderAccent: 'rgba(255, 128, 0, 0.35)'
       },
+      // 3. 紅牛車隊（暗色啞光深藍 + 經典紅黃）
+      red_bull: {
+        id: 'red_bull',
+        brandName: 'ORACLE RED BULL RACING',
+        cardBg: '#091322',
+        surface: '#0f1e34',
+        surfaceHover: '#162a49',
+        text: '#f0f4f8',
+        subtext: '#8294ad',
+        border: 'rgba(255, 255, 255, 0.08)',
+        primary: '#FCD700',   // 紅牛黃
+        accent: '#EA0029',    // 競速紅
+        stripe: 'linear-gradient(180deg, #EA0029 0%, #FCD700 100%)',
+        accentSoft: 'rgba(252, 215, 0, 0.12)',
+        borderAccent: 'rgba(252, 215, 0, 0.4)'
+      },
+      // 4. 賓士（曜石黑 + PETRONAS 蒂芬妮綠）
       mercedes: {
         id: 'mercedes',
         brandName: 'MERCEDES-AMG PETRONAS',
         cardBg: '#080d0d',
         surface: '#101a1a',
         surfaceHover: '#182727',
+        text: '#f0f4f8',
+        subtext: '#8e929b',
+        border: 'rgba(255, 255, 255, 0.08)',
         primary: '#00A19C',   // PETRONAS 綠
-        accent: '#27F4D2',    // 螢光蒂芬妮綠
+        accent: '#27F4D2',    // 螢光水綠
         stripe: 'linear-gradient(180deg, #00A19C 0%, #D4D8DC 100%)',
         accentSoft: 'rgba(0, 161, 156, 0.14)',
         borderAccent: 'rgba(39, 244, 210, 0.45)'
       },
+      // 5. 阿斯頓馬丁（暗色英國賽車綠 + 螢光萊姆黃）
       aston_martin: {
         id: 'aston_martin',
         brandName: 'ASTON MARTIN ARAMCO',
         cardBg: '#060d0a',
         surface: '#0d1a15',
         surfaceHover: '#13271f',
-        primary: '#00594F',   // 英國賽車綠
-        accent: '#CEDC00',    // 螢光萊姆黃
+        text: '#f0f4f8',
+        subtext: '#8e929b',
+        border: 'rgba(255, 255, 255, 0.08)',
+        primary: '#CEDC00',   // 螢光萊姆黃
+        accent: '#00594F',    // 賽車綠
         stripe: 'linear-gradient(180deg, #00594F 0%, #CEDC00 100%)',
         accentSoft: 'rgba(206, 220, 0, 0.12)',
         borderAccent: 'rgba(206, 220, 0, 0.45)'
       },
+      // 6. 威廉斯（深海藍 + 閃電冰藍）
       williams: {
         id: 'williams',
         brandName: 'WILLIAMS RACING',
         cardBg: '#050a14',
         surface: '#0a1426',
         surfaceHover: '#11203b',
-        primary: '#005AFF',   // 威廉斯藍
-        accent: '#64C4FF',    // 亮冰藍
+        text: '#f0f4f8',
+        subtext: '#8e929b',
+        border: 'rgba(255, 255, 255, 0.08)',
+        primary: '#64C4FF',   // 亮冰藍
+        accent: '#005AFF',    // 威廉斯深藍
         stripe: 'linear-gradient(180deg, #005AFF 0%, #64C4FF 100%)',
         accentSoft: 'rgba(100, 196, 255, 0.14)',
         borderAccent: 'rgba(100, 196, 255, 0.45)'
@@ -544,11 +580,14 @@
     const selectedTeamKey = (urlParams.get('team') || 'ferrari').toLowerCase();
     const currentTheme = THEMES[selectedTeamKey] || THEMES.ferrari;
 
-    // 動態注入 CSS 變數
+    // 動態注入 CSS 變數（卡片底色、文字顏色、邊框與主副配色）
     const rootStyle = document.documentElement.style;
     rootStyle.setProperty('--card-bg', currentTheme.cardBg);
     rootStyle.setProperty('--surface', currentTheme.surface);
     rootStyle.setProperty('--surface-hover', currentTheme.surfaceHover);
+    rootStyle.setProperty('--text', currentTheme.text);
+    rootStyle.setProperty('--subtext', currentTheme.subtext);
+    rootStyle.setProperty('--border', currentTheme.border);
     rootStyle.setProperty('--team-primary', currentTheme.primary);
     rootStyle.setProperty('--team-accent', currentTheme.accent);
     rootStyle.setProperty('--team-stripe', currentTheme.stripe);
