@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>F1 Team Telemetry Widget</title>
+  <!-- F1 官方字體庫 -->
+  <link href="https://fonts.cdnfonts.com/css/formula1" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* 預設變數，由 JS 依據 URL 參數動態覆寫 */
+      --card-bg: #0d0d11;
+      --surface: #17171e;
+      --surface-hover: #21212b;
+      --text: #f0f4f8;
+      --subtext: #8e929b;
+      --border: rgba(255, 255, 255, 0.08);
+
+      --team-primary: #e8002d;
+      --team-accent: #fff200;
+      --team-stripe: linear-gradient(180deg, #e8002d 0%, #fff200 100%);
+      --accent-soft: rgba(232, 0, 45, 0.14);
+      --border-accent: rgba(232, 0, 45, 0.45);
+
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+      --done-opacity: 0.38;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Formula1', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background-color: transparent;
+      color: var(--text);
+      padding: 6px;
+      line-height: 1.4;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .mono {
+      font-family: 'Formula1', 'JetBrains Mono', monospace;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.5px;
+    }
+
+    .container {
+      max-width: 620px;
+      margin: 0 auto;
+    }
+
+    /* 主卡片區塊 */
+    .next-race-card {
+      position: relative;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 18px 16px;
+      margin-bottom: 10px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    /* 左側車隊經典賽車飾條 */
+    .next-race-card::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: var(--team-stripe);
+    }
+
+    /* 頂部標誌列 */
+    .brand-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 10px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .team-badge-title {
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      color: var(--team-accent);
+      text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .team-diamond {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      background: var(--team-primary);
+      transform: rotate(45deg);
+    }
+
+    .round-pill {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--team-accent);
+      background: var(--accent-soft);
+      border: 1px solid var(--border-accent);
+      padding: 3px 8px;
+      border-radius: 99px;
+      letter-spacing: 0.6px;
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+      gap: 8px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--team-primary);
+      letter-spacing: 0.6px;
+    }
+
+    .live-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: var(--team-primary);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
+    .race-title {
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      margin-bottom: 2px;
+      color: #ffffff;
+    }
+
+    .race-meta {
+      font-size: 12px;
+      color: var(--subtext);
+      margin-bottom: 14px;
+    }
+
+    /* 單排 5 等分賽段按鈕 */
+    .sessions-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    @media (max-width: 440px) {
+      .sessions-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .session-pill {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 6px;
+      text-align: center;
+      cursor: pointer;
+      font-family: inherit;
+      color: var(--text);
+      transition: all 0.16s ease;
+    }
+
+    .session-pill:hover {
+      background: var(--surface-hover);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-1px);
+    }
+
+    .session-pill.active {
+      border-color: var(--team-accent);
+      background: var(--accent-soft);
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.08);
+    }
+
+    .session-pill.past {
+      opacity: var(--done-opacity);
+    }
+
+    .session-top {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+
+    .next-tag {
+      font-size: 9px;
+      background: var(--team-primary);
+      color: #ffffff;
+      padding: 0 4px;
+      border-radius: 3px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .session-time {
+      font-size: 10px;
+      color: var(--subtext);
+    }
+
+    /* 倒數四格面板 */
+    .countdown-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      text-align: center;
+    }
+
+    .time-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 4px;
+    }
+
+    .time-num {
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1.2;
+      color: var(--team-accent);
+    }
+
+    .time-label {
+      font-size: 10px;
+      color: var(--subtext);
+      margin-top: 2px;
+      letter-spacing: 0.5px;
+    }
+
+    /* 三分頁切換列 */
+    .tab-bar {
+      display: flex;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 3px;
+      margin-bottom: 8px;
+      gap: 4px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--subtext);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 0;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .tab-btn:hover {
+      color: #ffffff;
+    }
+
+    .tab-btn.active {
+      background: var(--surface);
+      color: var(--team-accent);
+      border: 1px solid var(--border-accent);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    /* 列表面板與極細捲軸 */
+    .list-panel {
+      position: relative;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      max-height: 220px;
+      overflow-y: auto;
+      background: var(--card-bg);
+      scroll-behavior: smooth;
+    }
+
+    .list-panel::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .list-panel::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .list-panel::-webkit-scrollbar-thumb {
+      background: rgba(142, 146, 155, 0.3);
+      border-radius: 99px;
+    }
+
+    .list-panel::-webkit-scrollbar-thumb:hover {
+      background: var(--team-accent);
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .list-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      transition: background-color 0.12s ease;
+    }
+
+    .list-item:hover {
+      background-color: var(--surface-hover);
+    }
+
+    .list-item:last-child {
+      border-bottom: none;
+    }
+
+    .list-item.completed {
+      opacity: var(--done-opacity);
+    }
+
+    .list-item.upcoming-highlight {
+      background: var(--accent-soft);
+      border-left: 3px solid var(--team-primary);
+      font-weight: 600;
+    }
+
+    /* 專屬車隊高亮行 */
+    .list-item.target-team-row {
+      background: var(--accent-soft);
+      border-left: 3px solid var(--team-accent);
+    }
+
+    .round-tag {
+      font-size: 11px;
+      color: var(--subtext);
+      margin-right: 8px;
+      min-width: 28px;
+      display: inline-block;
+    }
+
+    .item-right-meta {
+      font-size: 11px;
+      color: var(--subtext);
+      white-space: nowrap;
+    }
+
+    /* 積分榜名次徽章 */
+    .driver-left {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .pos-badge {
+      font-size: 11px;
+      font-weight: 700;
+      width: 20px;
+      height: 20px;
+      border-radius: 5px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--subtext);
+      background: var(--surface);
+      border: 1px solid var(--border);
+    }
+
+    .pos-badge.pos-1 {
+      background: rgba(255, 215, 0, 0.2);
+      color: #ffd700;
+      border-color: rgba(255, 215, 0, 0.6);
+    }
+
+    .pos-badge.pos-2 {
+      background: rgba(180, 195, 215, 0.15);
+      color: #cfd9e8;
+      border-color: rgba(180, 195, 215, 0.4);
+    }
+
+    .pos-badge.pos-3 {
+      background: rgba(205, 127, 50, 0.18);
+      color: #df9a63;
+      border-color: rgba(205, 127, 50, 0.4);
+    }
+
+    .team-bar {
+      width: 3px;
+      height: 18px;
+      border-radius: 2px;
+      background-color: var(--subtext);
+      flex-shrink: 0;
+    }
+
+    .driver-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .driver-name {
+      font-weight: 600;
+      font-size: 13px;
+      line-height: 1.25;
+      letter-spacing: 0.3px;
+    }
+
+    .team-name {
+      font-size: 11px;
+      color: var(--subtext);
+    }
+
+    .points-badge {
+      font-size: 12px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .points-unit {
+      font-size: 9px;
+      font-weight: 500;
+      color: var(--subtext);
+      margin-left: 3px;
+    }
+
+    .status-msg {
+      text-align: center;
+      font-size: 13px;
+      color: var(--subtext);
+      padding: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="next-race-container">
+      <div class="status-msg">載入遙測數據中...</div>
+    </div>
+
+    <!-- 三分頁切換列 -->
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tab-schedule" onclick="switchTab('schedule')">賽程表</button>
+      <button class="tab-btn" id="tab-drivers" onclick="switchTab('drivers')">車手積分榜</button>
+      <button class="tab-btn" id="tab-constructors" onclick="switchTab('constructors')">車隊積分榜</button>
+    </div>
+
+    <div class="list-panel" id="panel-schedule"></div>
+    <div class="list-panel hidden" id="panel-drivers"></div>
+    <div class="list-panel hidden" id="panel-constructors"></div>
+  </div>
+
+  <script>
+    // 車隊塗裝色彩配置庫
+    const THEMES = {
+      ferrari: {
+        id: 'ferrari',
+        brandName: 'SCUDERIA FERRARI',
+        cardBg: '#120507',
+        surface: '#1c0a0e',
+        surfaceHover: '#291117',
+        primary: '#E8002D',   // Rosso Corsa 紅
+        accent: '#FFF200',    // 摩德納黃
+        stripe: 'linear-gradient(180deg, #E8002D 0%, #FFF200 100%)',
+        accentSoft: 'rgba(232, 0, 45, 0.14)',
+        borderAccent: 'rgba(255, 242, 0, 0.45)'
+      },
+      mclaren: {
+        id: 'mclaren',
+        brandName: 'McLAREN F1 TEAM',
+        cardBg: '#0f0c08',
+        surface: '#1c160e',
+        surfaceHover: '#2a2217',
+        primary: '#FF8000',   // 木瓜橘
+        accent: '#47C7FC',    // 競速水藍
+        stripe: 'linear-gradient(180deg, #FF8000 0%, #47C7FC 100%)',
+        accentSoft: 'rgba(255, 128, 0, 0.14)',
+        borderAccent: 'rgba(255, 128, 0, 0.45)'
+      },
+      mercedes: {
+        id: 'mercedes',
+        brandName: 'MERCEDES-AMG PETRONAS',
+        cardBg: '#080d0d',
+        surface: '#101a1a',
+        surfaceHover: '#182727',
+        primary: '#00A19C',   // PETRONAS 綠
+        accent: '#27F4D2',    // 螢光蒂芬妮綠
+        stripe: 'linear-gradient(180deg, #00A19C 0%, #D4D8DC 100%)',
+        accentSoft: 'rgba(0, 161, 156, 0.14)',
+        borderAccent: 'rgba(39, 244, 210, 0.45)'
+      },
+      aston_martin: {
+        id: 'aston_martin',
+        brandName: 'ASTON MARTIN ARAMCO',
+        cardBg: '#060d0a',
+        surface: '#0d1a15',
+        surfaceHover: '#13271f',
+        primary: '#00594F',   // 英國賽車綠
+        accent: '#CEDC00',    // 螢光萊姆黃
+        stripe: 'linear-gradient(180deg, #00594F 0%, #CEDC00 100%)',
+        accentSoft: 'rgba(206, 220, 0, 0.12)',
+        borderAccent: 'rgba(206, 220, 0, 0.45)'
+      },
+      williams: {
+        id: 'williams',
+        brandName: 'WILLIAMS RACING',
+        cardBg: '#050a14',
+        surface: '#0a1426',
+        surfaceHover: '#11203b',
+        primary: '#005AFF',   // 威廉斯藍
+        accent: '#64C4FF',    // 亮冰藍
+        stripe: 'linear-gradient(180deg, #005AFF 0%, #64C4FF 100%)',
+        accentSoft: 'rgba(100, 196, 255, 0.14)',
+        borderAccent: 'rgba(100, 196, 255, 0.45)'
+      }
+    };
+
+    // 解析網址參數 ?team=xxx（預設為 ferrari）
+    const urlParams = new URLSearchParams(window.location.search);
+    const selectedTeamKey = (urlParams.get('team') || 'ferrari').toLowerCase();
+    const currentTheme = THEMES[selectedTeamKey] || THEMES.ferrari;
+
+    // 動態注入 CSS 變數
+    const rootStyle = document.documentElement.style;
+    rootStyle.setProperty('--card-bg', currentTheme.cardBg);
+    rootStyle.setProperty('--surface', currentTheme.surface);
+    rootStyle.setProperty('--surface-hover', currentTheme.surfaceHover);
+    rootStyle.setProperty('--team-primary', currentTheme.primary);
+    rootStyle.setProperty('--team-accent', currentTheme.accent);
+    rootStyle.setProperty('--team-stripe', currentTheme.stripe);
+    rootStyle.setProperty('--accent-soft', currentTheme.accentSoft);
+    rootStyle.setProperty('--border-accent', currentTheme.borderAccent);
+
+    const SCHEDULE_API = 'https://api.jolpi.ca/ergast/f1/current.json';
+    const DRIVERS_API = 'https://api.jolpi.ca/ergast/f1/current/driverStandings.json';
+    const CONSTRUCTORS_API = 'https://api.jolpi.ca/ergast/f1/current/constructorStandings.json';
+
+    let countdownInterval = null;
+    let currentWeekendSessions = [];
+    let activeSessionIndex = 0;
+
+    const TEAM_COLORS = {
+      ferrari: '#E8002D',
+      mclaren: '#FF8000',
+      mercedes: '#27F4D2',
+      aston_martin: '#229971',
+      red_bull: '#FCD700',
+      alpine: '#FF87BC',
+      haas: '#B6BABD',
+      rb: '#6692FF',
+      racing_bulls: '#6692FF',
+      williams: '#64C4FF',
+      sauber: '#52E252',
+      kick_sauber: '#52E252',
+      audi: '#F50537',
+      cadillac: '#D4AF37'
+    };
+
+    function switchTab(tabName) {
+      const tabs = ['schedule', 'drivers', 'constructors'];
+      tabs.forEach(t => {
+        const isTarget = (t === tabName);
+        const btn = document.getElementById(`tab-${t}`);
+        const panel = document.getElementById(`panel-${t}`);
+        if (btn) btn.classList.toggle('active', isTarget);
+        if (panel) panel.classList.toggle('hidden', !isTarget);
+      });
+    }
+
+    async function initF1Widget() {
+      const [scheduleRes, driversRes, constrRes] = await Promise.allSettled([
+        fetch(SCHEDULE_API).then(r => r.json()),
+        fetch(DRIVERS_API).then(r => r.json()),
+        fetch(CONSTRUCTORS_API).then(r => r.json())
+      ]);
+
+      if (scheduleRes.status === 'fulfilled') {
+        const races = scheduleRes.value.MRData.RaceTable.Races;
+        renderSchedule(races);
+      } else {
+        document.getElementById('next-race-container').innerHTML =
+          '<div class="status-msg">賽程資料載入失敗，請稍後重新整理。</div>';
+      }
+
+      if (driversRes.status === 'fulfilled') {
+        const lists = driversRes.value.MRData.StandingsTable.StandingsLists;
+        const standings = lists.length > 0 ? lists[0].DriverStandings : [];
+        renderDriverStandings(standings);
+      } else {
+        document.getElementById('panel-drivers').innerHTML =
+          '<div class="status-msg">車手積分榜載入失敗。</div>';
+      }
+
+      if (constrRes.status === 'fulfilled') {
+        const lists = constrRes.value.MRData.StandingsTable.StandingsLists;
+        const standings = lists.length > 0 ? lists[0].ConstructorStandings : [];
+        renderConstructorStandings(standings);
+      } else {
+        document.getElementById('panel-constructors').innerHTML =
+          '<div class="status-msg">車隊積分榜載入失敗。</div>';
+      }
+    }
+
+    function extractWeekendSessions(race) {
+      const sessions = [];
+      const pushIfValid = (shortName, fullName, obj) => {
+        if (obj && obj.date) {
+          const dt = new Date(`${obj.date}T${obj.time || '00:00:00Z'}`);
+          sessions.push({ shortName, fullName, time: dt });
+        }
+      };
+
+      pushIfValid('FP1', '第一節練習賽 (FP1)', race.FirstPractice);
+      pushIfValid('FP2', '第二節練習賽 (FP2)', race.SecondPractice);
+      pushIfValid('FP3', '第三節練習賽 (FP3)', race.ThirdPractice);
+      pushIfValid('衝刺排位', '衝刺排位賽 (SQ)', race.SprintQualifying || race.SprintShootout);
+      pushIfValid('衝刺賽', '衝刺賽 (Sprint)', race.Sprint);
+      pushIfValid('排位賽', '排位賽 (Qualifying)', race.Qualifying);
+      pushIfValid('正賽', '正賽 (Grand Prix)', { date: race.date, time: race.time });
+
+      return sessions.sort((a, b) => a.time - b.time);
+    }
+
+    function renderSchedule(races) {
+      const now = new Date();
+      let nextRace = null;
+      const panelEl = document.getElementById('panel-schedule');
+
+      const listHTML = races.map(race => {
+        const raceTime = new Date(`${race.date}T${race.time || '00:00:00Z'}`);
+        const isCompleted = raceTime < now;
+        let isNext = false;
+
+        if (!isCompleted && !nextRace) {
+          nextRace = { ...race, raceTime };
+          isNext = true;
+        }
+
+        const localDateStr = raceTime.toLocaleDateString('zh-TW', {
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        });
+
+        const rowClass = isCompleted
+          ? 'list-item completed'
+          : isNext
+            ? 'list-item upcoming-highlight'
+            : 'list-item';
+
+        return `
+          <div class="${rowClass}" ${isNext ? 'id="next-race-row"' : ''}>
+            <div>
+              <span class="round-tag mono">R${String(race.round).padStart(2, '0')}</span>
+              <span>${race.raceName.replace('Grand Prix', 'GP')}</span>
+            </div>
+            <div class="item-right-meta mono">${localDateStr}</div>
+          </div>
+        `;
+      }).join('');
+
+      panelEl.innerHTML = listHTML;
+
+      const nextRowEl = document.getElementById('next-race-row');
+      if (nextRowEl) {
+        panelEl.scrollTop = Math.max(0, nextRowEl.offsetTop - 75);
+      }
+
+      if (nextRace) {
+        renderNextRaceCard(nextRace);
+      } else {
+        document.getElementById('next-race-container').innerHTML =
+          `<div class="next-race-card"><div class="team-badge-title">${currentTheme.brandName}</div><div class="race-title">本賽季已全數完賽</div></div>`;
+      }
+    }
+
+    function renderNextRaceCard(race) {
+      const container = document.getElementById('next-race-container');
+      const now = new Date();
+      currentWeekendSessions = extractWeekendSessions(race);
+
+      const nextIdx = currentWeekendSessions.findIndex(s => s.time > now);
+      activeSessionIndex = nextIdx !== -1 ? nextIdx : currentWeekendSessions.length - 1;
+
+      const pillsHTML = currentWeekendSessions.map((session, idx) => {
+        const isPast = session.time <= now;
+        const isNextUpcoming = idx === nextIdx;
+        const timeStr = session.time.toLocaleString('zh-TW', {
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        });
+
+        return `
+          <button type="button"
+                  class="session-pill ${isPast ? 'past' : ''} ${idx === activeSessionIndex ? 'active' : ''}"
+                  id="session-pill-${idx}"
+                  onclick="selectSession(${idx})">
+            <div class="session-top">
+              <span>${session.shortName}</span>
+              ${isNextUpcoming ? '<span class="next-tag">NEXT</span>' : ''}
+            </div>
+            <div class="session-time mono">${timeStr}</div>
+          </button>
+        `;
+      }).join('');
+
+      container.innerHTML = `
+        <div class="next-race-card">
+          <div class="brand-bar">
+            <div class="team-badge-title">
+              <span class="team-diamond"></span>
+              ${currentTheme.brandName}
+            </div>
+            <span class="round-pill mono">${race.season} • ROUND ${String(race.round).padStart(2, '0')}</span>
+          </div>
+          <div class="header-top">
+            <div class="badge"><span class="live-dot"></span><span id="active-session-name">載入中</span></div>
+          </div>
+          <div class="race-title">${race.raceName}</div>
+          <div class="race-meta">${race.Circuit.circuitName}</div>
+          <div class="sessions-grid">${pillsHTML}</div>
+          <div class="countdown-grid">
+            <div class="time-box"><div class="time-num mono" id="cd-days">--</div><div class="time-label">天</div></div>
+            <div class="time-box"><div class="time-num mono" id="cd-hours">--</div><div class="time-label">時</div></div>
+            <div class="time-box"><div class="time-num mono" id="cd-mins">--</div><div class="time-label">分</div></div>
+            <div class="time-box"><div class="time-num mono" id="cd-secs">--</div><div class="time-label">秒</div></div>
+          </div>
+        </div>
+      `;
+
+      selectSession(activeSessionIndex);
+    }
+
+    function selectSession(index) {
+      activeSessionIndex = index;
+      const targetSession = currentWeekendSessions[index];
+      if (!targetSession) return;
+
+      currentWeekendSessions.forEach((_, idx) => {
+        const btn = document.getElementById(`session-pill-${idx}`);
+        if (btn) btn.classList.toggle('active', idx === index);
+      });
+
+      document.getElementById('active-session-name').innerText = targetSession.fullName;
+
+      updateCountdown(targetSession.time);
+      if (countdownInterval) clearInterval(countdownInterval);
+      countdownInterval = setInterval(() => updateCountdown(targetSession.time), 1000);
+    }
+
+    function updateCountdown(targetTime) {
+      const diff = targetTime - new Date();
+      if (diff <= 0) {
+        document.getElementById('cd-days').innerText = '00';
+        document.getElementById('cd-hours').innerText = '00';
+        document.getElementById('cd-mins').innerText = '00';
+        document.getElementById('cd-secs').innerText = '00';
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const mins = Math.floor((diff / 1000 / 60) % 60);
+      const secs = Math.floor((diff / 1000) % 60);
+
+      document.getElementById('cd-days').innerText = String(days).padStart(2, '0');
+      document.getElementById('cd-hours').innerText = String(hours).padStart(2, '0');
+      document.getElementById('cd-mins').innerText = String(mins).padStart(2, '0');
+      document.getElementById('cd-secs').innerText = String(secs).padStart(2, '0');
+    }
+
+    function renderDriverStandings(standings) {
+      const container = document.getElementById('panel-drivers');
+      if (!standings || standings.length === 0) {
+        container.innerHTML = '<div class="status-msg">目前尚無本賽季車手積分紀錄。</div>';
+        return;
+      }
+
+      container.innerHTML = standings.map(item => {
+        const pos = parseInt(item.position, 10);
+        const constructor = item.Constructors?.[0];
+        const constructorId = constructor ? constructor.constructorId : '';
+        const isTargetTeam = (constructorId === currentTheme.id);
+        const teamColor = constructor ? (TEAM_COLORS[constructorId] || '#787774') : '#787774';
+        const teamName = constructor ? constructor.name : '';
+        const posClass = pos <= 3 ? `pos-${pos}` : '';
+
+        return `
+          <div class="list-item ${isTargetTeam ? 'target-team-row' : ''}">
+            <div class="driver-left">
+              <span class="pos-badge mono ${posClass}">${item.position}</span>
+              <span class="team-bar" style="background-color: ${teamColor};"></span>
+              <div class="driver-info">
+                <span class="driver-name">${item.Driver.givenName} ${item.Driver.familyName} ${isTargetTeam ? '★' : ''}</span>
+                <span class="team-name">${teamName}</span>
+              </div>
+            </div>
+            <div class="points-badge mono">${item.points}<span class="points-unit">PTS</span></div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderConstructorStandings(standings) {
+      const container = document.getElementById('panel-constructors');
+      if (!standings || standings.length === 0) {
+        container.innerHTML = '<div class="status-msg">目前尚無本賽季車隊積分紀錄。</div>';
+        return;
+      }
+
+      container.innerHTML = standings.map(item => {
+        const pos = parseInt(item.position, 10);
+        const constructor = item.Constructor;
+        const teamId = constructor ? constructor.constructorId : '';
+        const isTargetTeam = (teamId === currentTheme.id);
+        const teamColor = TEAM_COLORS[teamId] || '#787774';
+        const teamName = constructor ? constructor.name : '';
+        const nationality = constructor ? constructor.nationality : '';
+        const posClass = pos <= 3 ? `pos-${pos}` : '';
+
+        return `
+          <div class="list-item ${isTargetTeam ? 'target-team-row' : ''}">
+            <div class="driver-left">
+              <span class="pos-badge mono ${posClass}">${item.position}</span>
+              <span class="team-bar" style="background-color: ${teamColor};"></span>
+              <div class="driver-info">
+                <span class="driver-name">${teamName} ${isTargetTeam ? '★' : ''}</span>
+                <span class="team-name">${nationality} • ${item.wins} 勝</span>
+              </div>
+            </div>
+            <div class="points-badge mono">${item.points}<span class="points-unit">PTS</span></div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    initF1Widget();
+  </script>
+</body>
+</html>
