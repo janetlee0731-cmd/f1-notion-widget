@@ -372,15 +372,37 @@
       white-space: nowrap;
     }
 
-    /* 隊徽樣式 */
+    /* 隊標圖示與 F1 官方縮寫隊徽樣式 */
+    .team-logo-container {
+      display: inline-flex;
+      align-items: center;
+      margin-right: 6px;
+      vertical-align: middle;
+      flex-shrink: 0;
+    }
+
     .mini-team-logo {
-      width: 15px;
-      height: 15px;
+      width: 16px;
+      height: 16px;
       object-fit: contain;
-      vertical-align: -2.5px;
-      margin-right: 5px;
       display: inline-block;
       filter: drop-shadow(0 1px 1px rgba(0,0,0,0.15));
+    }
+
+    /* 智慧防破圖縮寫徽章（Fallback） */
+    .team-badge-fallback {
+      font-family: 'Formula1', monospace;
+      font-size: 8.5px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      padding: 1px 4px;
+      border-radius: 3px;
+      line-height: 1.2;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 26px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
     }
 
     /* 積分榜名次徽章 */
@@ -584,20 +606,22 @@
       }
     };
 
-    // 各車隊官方隊徽 CDN 字典
-    const TEAM_LOGOS = {
-      ferrari: 'https://upload.wikimedia.org/wikipedia/de/thumb/c/c0/Scuderia_Ferrari_Logo.svg/100px-Scuderia_Ferrari_Logo.svg.png',
-      mclaren: 'https://upload.wikimedia.org/wikipedia/en/thumb/6/66/McLaren_Racing_logo.svg/120px-McLaren_Racing_logo.svg.png',
-      red_bull: 'https://upload.wikimedia.org/wikipedia/en/thumb/7/77/Red_Bull_Racing_logo.svg/120px-Red_Bull_Racing_logo.svg.png',
-      mercedes: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Mercedes-Logo.svg/100px-Mercedes-Logo.svg.png',
-      aston_martin: 'https://upload.wikimedia.org/wikipedia/en/thumb/7/70/Aston_Martin_Aramco_Cognizant_F1.svg/120px-Aston_Martin_Aramco_Cognizant_F1.svg.png',
-      alpine: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Alpine_F1_Team_Logo.svg/100px-Alpine_F1_Team_Logo.svg.png',
-      williams: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Williams_Grand_Prix_Engineering_logo.svg/100px-Williams_Grand_Prix_Engineering_logo.svg.png',
-      haas: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Haas_F1_Team_logo.svg/100px-Haas_F1_Team_logo.svg.png',
-      sauber: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Stake_F1_Team_Kick_Sauber_logo.svg/120px-Stake_F1_Team_Kick_Sauber_logo.svg.png',
-      kick_sauber: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Stake_F1_Team_Kick_Sauber_logo.svg/120px-Stake_F1_Team_Kick_Sauber_logo.svg.png',
-      rb: 'https://upload.wikimedia.org/wikipedia/en/thumb/2/2b/VCARB_F1_logo.svg/120px-VCARB_F1_logo.svg.png',
-      racing_bulls: 'https://upload.wikimedia.org/wikipedia/en/thumb/2/2b/VCARB_F1_logo.svg/120px-VCARB_F1_logo.svg.png'
+    // 車隊代表色、縮寫與隊標圖片字典（若有上傳本機圖檔會優先載入）
+    const TEAM_INFO = {
+      ferrari:      { code: 'SF',  color: '#E8002D', textColor: '#FFFFFF', logo: 'logos/ferrari.png' },
+      mclaren:      { code: 'MCL', color: '#FF8000', textColor: '#000000', logo: 'logos/mclaren.png' },
+      red_bull:     { code: 'RBR', color: '#001A30', textColor: '#FCD700', logo: 'logos/red_bull.png' },
+      mercedes:     { code: 'MER', color: '#00A19C', textColor: '#000000', logo: 'logos/mercedes.png' },
+      aston_martin: { code: 'AMR', color: '#00594F', textColor: '#CEDC00', logo: 'logos/aston_martin.png' },
+      alpine:       { code: 'ALP', color: '#0090FF', textColor: '#FFFFFF', logo: 'logos/alpine.png' },
+      williams:     { code: 'WIL', color: '#005AFF', textColor: '#FFFFFF', logo: 'logos/williams.png' },
+      haas:         { code: 'HAS', color: '#E6002B', textColor: '#FFFFFF', logo: 'logos/haas.png' },
+      sauber:       { code: 'SAU', color: '#52E252', textColor: '#000000', logo: 'logos/sauber.png' },
+      kick_sauber:  { code: 'SAU', color: '#52E252', textColor: '#000000', logo: 'logos/sauber.png' },
+      rb:           { code: 'VCARB', color: '#1634CB', textColor: '#FFFFFF', logo: 'logos/rb.png' },
+      racing_bulls: { code: 'VCARB', color: '#1634CB', textColor: '#FFFFFF', logo: 'logos/rb.png' },
+      audi:         { code: 'AUD', color: '#F50537', textColor: '#FFFFFF', logo: 'logos/audi.png' },
+      cadillac:     { code: 'CAD', color: '#D4AF37', textColor: '#000000', logo: 'logos/cadillac.png' }
     };
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -624,23 +648,6 @@
     let countdownInterval = null;
     let currentWeekendSessions = [];
     let activeSessionIndex = 0;
-
-    const TEAM_COLORS = {
-      ferrari: '#E8002D',
-      mclaren: '#FF8000',
-      mercedes: '#27F4D2',
-      aston_martin: '#229971',
-      red_bull: '#FCD700',
-      alpine: '#FF87BC',
-      haas: '#B6BABD',
-      rb: '#6692FF',
-      racing_bulls: '#6692FF',
-      williams: '#64C4FF',
-      sauber: '#52E252',
-      kick_sauber: '#52E252',
-      audi: '#F50537',
-      cadillac: '#D4AF37'
-    };
 
     function switchTab(tabName) {
       const tabs = ['schedule', 'drivers', 'constructors'];
@@ -860,7 +867,26 @@
       document.getElementById('cd-secs').innerText = String(secs).padStart(2, '0');
     }
 
-    // 車手積分榜（在隊名隊伍文字前加上隊徽）
+    // 隊標產生器：優先載入圖檔，若未上傳或破圖則無縫回退顯示 F1 車隊縮寫徽章
+    function generateTeamBadge(teamId) {
+      const info = TEAM_INFO[teamId] || { code: 'F1', color: '#787774', textColor: '#FFFFFF', logo: '' };
+      const fallbackBadge = `<span class="team-badge-fallback" style="background-color: ${info.color}; color: ${info.textColor};">${info.code}</span>`;
+
+      if (!info.logo) {
+        return `<span class="team-logo-container">${fallbackBadge}</span>`;
+      }
+
+      return `
+        <span class="team-logo-container">
+          <img src="${info.logo}" class="mini-team-logo" alt="${info.code}"
+               onload="this.nextElementSibling.style.display='none';"
+               onerror="this.style.display='none';">
+          ${fallbackBadge}
+        </span>
+      `;
+    }
+
+    // 車手積分榜
     function renderDriverStandings(standings) {
       const container = document.getElementById('panel-drivers');
       if (!standings || standings.length === 0) {
@@ -873,23 +899,19 @@
         const constructor = item.Constructors?.[0];
         const constructorId = constructor ? constructor.constructorId : '';
         const isTargetTeam = (constructorId === currentTheme.id);
-        const teamColor = constructor ? (TEAM_COLORS[constructorId] || '#787774') : '#787774';
+        const teamInfo = TEAM_INFO[constructorId] || { color: '#787774' };
         const teamName = constructor ? constructor.name : '';
-        const teamLogoUrl = TEAM_LOGOS[constructorId];
         const posClass = pos <= 3 ? `pos-${pos}` : '';
-
-        const logoHTML = teamLogoUrl 
-          ? `<img src="${teamLogoUrl}" class="mini-team-logo" alt="${teamName}" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
-          : '';
+        const badgeHTML = generateTeamBadge(constructorId);
 
         return `
           <div class="list-item ${isTargetTeam ? 'target-team-row' : ''}">
             <div class="driver-left">
               <span class="pos-badge mono ${posClass}">${item.position}</span>
-              <span class="team-bar" style="background-color: ${teamColor};"></span>
+              <span class="team-bar" style="background-color: ${teamInfo.color};"></span>
               <div class="driver-info">
                 <span class="driver-name">${item.Driver.givenName} ${item.Driver.familyName} ${isTargetTeam ? '★' : ''}</span>
-                <span class="team-name">${logoHTML}<span>${teamName}</span></span>
+                <span class="team-name">${badgeHTML}<span>${teamName}</span></span>
               </div>
             </div>
             <div class="points-badge mono">${item.points}<span class="points-unit">PTS</span></div>
@@ -898,7 +920,7 @@
       }).join('');
     }
 
-    // 車隊積分榜（在車隊名稱前直接加上隊徽）
+    // 車隊積分榜
     function renderConstructorStandings(standings) {
       const container = document.getElementById('panel-constructors');
       if (!standings || standings.length === 0) {
@@ -911,23 +933,19 @@
         const constructor = item.Constructor;
         const teamId = constructor ? constructor.constructorId : '';
         const isTargetTeam = (teamId === currentTheme.id);
-        const teamColor = TEAM_COLORS[teamId] || '#787774';
+        const teamInfo = TEAM_INFO[teamId] || { color: '#787774' };
         const teamName = constructor ? constructor.name : '';
         const nationality = constructor ? constructor.nationality : '';
-        const teamLogoUrl = TEAM_LOGOS[teamId];
         const posClass = pos <= 3 ? `pos-${pos}` : '';
-
-        const logoHTML = teamLogoUrl 
-          ? `<img src="${teamLogoUrl}" class="mini-team-logo" alt="${teamName}" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
-          : '';
+        const badgeHTML = generateTeamBadge(teamId);
 
         return `
           <div class="list-item ${isTargetTeam ? 'target-team-row' : ''}">
             <div class="driver-left">
               <span class="pos-badge mono ${posClass}">${item.position}</span>
-              <span class="team-bar" style="background-color: ${teamColor};"></span>
+              <span class="team-bar" style="background-color: ${teamInfo.color};"></span>
               <div class="driver-info">
-                <span class="driver-name">${logoHTML}<span>${teamName}</span> ${isTargetTeam ? '★' : ''}</span>
+                <span class="driver-name">${badgeHTML}<span>${teamName}</span> ${isTargetTeam ? '★' : ''}</span>
                 <span class="team-name">${nationality} • ${item.wins} 勝</span>
               </div>
             </div>
