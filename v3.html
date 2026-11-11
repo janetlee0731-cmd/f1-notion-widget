@@ -97,6 +97,14 @@
       gap: 7px;
     }
 
+    .f1-official-logo {
+  height: 20px;          /* 官方 Logo 高度，符合卡片標題列比例 */
+  width: auto;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+}
+    
     .f1-diamond {
       display: inline-block;
       width: 8px;
@@ -695,10 +703,17 @@
         const isCompleted = raceTime < now;
         let isNext = false;
 
-        if (!isCompleted && !nextRace) {
-          nextRace = { ...race, raceTime };
-          isNext = true;
-        }
+        if (nextRace) {
+        renderNextRaceCard(nextRace);
+      } else {
+        document.getElementById('next-race-container').innerHTML =
+          `<div class="next-race-card">
+            <div class="brand-bar">
+              <img src="https://media.formula1.com/image/upload/f_auto,c_limit,w_195,q_auto/etc/designs/fom-website/images/svg/f1-logo.svg" alt="F1" class="f1-official-logo" referrerpolicy="no-referrer">
+            </div>
+            <div class="race-title">本賽季已全數完賽</div>
+          </div>`;
+      }
 
         const localDateStr = raceTime.toLocaleDateString('zh-TW', {
           month: '2-digit',
@@ -777,8 +792,11 @@
         <div class="next-race-card">
           <div class="brand-bar">
             <div class="dashboard-title">
-              <span class="f1-diamond"></span>
-              FORMULA 1
+             <img src="https://media.formula1.com/image/upload/f_auto,c_limit,w_195,q_auto/etc/designs/fom-website/images/svg/f1-logo.svg"
+                 alt="Formula 1"
+                 class="f1-official-logo"
+                 referrerpolicy="no-referrer"
+                 onerror="this.onerror=null; this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/F1.svg/320px-F1.svg.png';">
             </div>
             <span class="round-pill mono">${race.season} • ROUND ${String(race.round).padStart(2, '0')}</span>
           </div>
