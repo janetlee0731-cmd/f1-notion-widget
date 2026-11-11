@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>F1 Schedule & Standings Widget</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --card-bg: #f7f6f3;
+      --text: #37352f;
+      --subtext: #787774;
+      --border: #e0dfdc;
+      --accent: #e10600;
+      --done-opacity: 0.45;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #191919;
+        --card-bg: #202020;
+        --text: #ebebea;
+        --subtext: #9b9a97;
+        --border: #2f2f2f;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 12px;
+      line-height: 1.4;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* 下一站倒數主卡片 */
+    .next-race-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--accent);
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .race-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+
+    .race-meta {
+      font-size: 12px;
+      color: var(--subtext);
+      margin-bottom: 12px;
+    }
+
+    .countdown-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      text-align: center;
+    }
+
+    .time-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 4px;
+    }
+
+    .time-num {
+      font-size: 18px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .time-label {
+      font-size: 10px;
+      color: var(--subtext);
+    }
+
+    /* 分頁切換按鈕列 */
+    .tab-bar {
+      display: flex;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 3px;
+      margin-bottom: 8px;
+      gap: 4px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--subtext);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 0;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .tab-btn:hover {
+      color: var(--text);
+    }
+
+    .tab-btn.active {
+      background: var(--bg);
+      color: var(--text);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    }
+
+    /* 列表容器共用樣式 */
+    .list-panel {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      max-height: 240px;
+      overflow-y: auto;
+      background: var(--card-bg);
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .list-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+
+    .list-item:last-child {
+      border-bottom: none;
+    }
+
+    /* 賽程表專用樣式 */
+    .list-item.completed {
+      opacity: var(--done-opacity);
+    }
+
+    .list-item.upcoming-highlight {
+      background: rgba(225, 6, 0, 0.08);
+      font-weight: 600;
+    }
+
+    .round-tag {
+      font-size: 11px;
+      color: var(--subtext);
+      margin-right: 8px;
+      min-width: 28px;
+      display: inline-block;
+    }
+
+    .item-right-meta {
+      font-size: 12px;
+      color: var(--subtext);
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* 車手積分榜專用樣式 */
+    .driver-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pos-num {
+      font-size: 12px;
+      font-weight: 700;
+      min-width: 20px;
+      color: var(--subtext);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .pos-num.top-three {
+      color: var(--accent);
+    }
+
+    .team-bar {
+      width: 3px;
+      height: 16px;
+      border-radius: 2px;
+      background-color: var(--subtext);
+      flex-shrink: 0;
+    }
+
+    .driver-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .driver-name {
+      font-weight: 600;
+      font-size: 13px;
+      line-height: 1.2;
+    }
+
+    .team-name {
+      font-size: 11px;
+      color: var(--subtext);
+    }
+
+    .points-badge {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .points-unit {
+      font-size: 10px;
+      font-weight: 400;
+      color: var(--subtext);
+      margin-left: 2px;
+    }
+
+    .status-msg {
+      text-align: center;
+      font-size: 13px;
+      color: var(--subtext);
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="next-race-container">
+      <div class="status-msg">載入 F1 資料中...</div>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tab-schedule" onclick="switchTab('schedule')">賽程表</button>
+      <button class="tab-btn" id="tab-standings" onclick="switchTab('standings')">車手積分榜</button>
+    </div>
+
+    <div class="list-panel" id="panel-schedule"></div>
+    <div class="list-panel hidden" id="panel-standings"></div>
+  </div>
+
+  <script>
+    const SCHEDULE_API = 'https://api.jolpi.ca/ergast/f1/current.json';
+    const STANDINGS_API = 'https://api.jolpi.ca/ergast/f1/current/driverStandings.json';
+    let countdownInterval = null;
+
+    // 常見車隊代表色對照表
+    const TEAM_COLORS = {
+      red_bull: '#3671C6',
+      ferrari: '#E8002D',
+      mclaren: '#FF8000',
+      mercedes: '#27F4D2',
+      aston_martin: '#229971',
+      alpine: '#FF87BC',
+      williams: '#64C4FF',
+      rb: '#6692FF',
+      sauber: '#52E252',
+      audi: '#F50537',
+      haas: '#B6BABD',
+      cadillac: '#D4AF37'
+    };
+
+    function switchTab(tabName) {
+      const isSchedule = tabName === 'schedule';
+      document.getElementById('tab-schedule').classList.toggle('active', isSchedule);
+      document.getElementById('tab-standings').classList.toggle('active', !isSchedule);
+      document.getElementById('panel-schedule').classList.toggle('hidden', !isSchedule);
+      document.getElementById('panel-standings').classList.toggle('hidden', isSchedule);
+    }
+
+    async function initF1Widget() {
+      const [scheduleRes, standingsRes] = await Promise.allSettled([
+        fetch(SCHEDULE_API).then(r => r.json()),
+        fetch(STANDINGS_API).then(r => r.json())
+      ]);
+
+      if (scheduleRes.status === 'fulfilled') {
+        const races = scheduleRes.value.MRData.RaceTable.Races;
+        renderSchedule(races);
+      } else {
+        document.getElementById('next-race-container').innerHTML =
+          '<div class="status-msg">賽程資料載入失敗，請稍後重新整理。</div>';
+      }
+
+      if (standingsRes.status === 'fulfilled') {
+        const lists = standingsRes.value.MRData.StandingsTable.StandingsLists;
+        const standings = lists.length > 0 ? lists[0].DriverStandings : [];
+        renderStandings(standings);
+      } else {
+        document.getElementById('panel-standings').innerHTML =
+          '<div class="status-msg">積分榜資料載入失敗。</div>';
+      }
+    }
+
+    function renderSchedule(races) {
+      const now = new Date();
+      let nextRace = null;
+
+      const listHTML = races.map(race => {
+        const raceTime = new Date(`${race.date}T${race.time || '00:00:00Z'}`);
+        const isCompleted = raceTime < now;
+        let isNext = false;
+
+        if (!isCompleted && !nextRace) {
+          nextRace = { ...race, raceTime };
+          isNext = true;
+        }
+
+        const localDateStr = raceTime.toLocaleDateString('zh-TW', {
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        });
+
+        const rowClass = isCompleted
+          ? 'list-item completed'
+          : isNext
+            ? 'list-item upcoming-highlight'
+            : 'list-item';
+
+        return `
+          <div class="${rowClass}">
+            <div>
+              <span class="round-tag">R${race.round}</span>
+              <span>${race.raceName.replace('Grand Prix', 'GP')}</span>
+            </div>
+            <div class="item-right-meta">${localDateStr}</div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('panel-schedule').innerHTML = listHTML;
+
+      if (nextRace) {
+        renderNextRaceCard(nextRace);
+      } else {
+        document.getElementById('next-race-container').innerHTML =
+          '<div class="next-race-card"><div class="race-title">本賽季已全數完賽</div></div>';
+      }
+    }
+
+    function renderStandings(standings) {
+      const container = document.getElementById('panel-standings');
+
+      if (!standings || standings.length === 0) {
+        container.innerHTML = '<div class="status-msg">目前尚無本賽季積分紀錄。</div>';
+        return;
+      }
+
+      container.innerHTML = standings.map(item => {
+        const pos = parseInt(item.position, 10);
+        const constructor = item.Constructors?.[0];
+        const teamColor = constructor ? (TEAM_COLORS[constructor.constructorId] || '#787774') : '#787774';
+        const teamName = constructor ? constructor.name : '';
+
+        return `
+          <div class="list-item">
+            <div class="driver-left">
+              <span class="pos-num ${pos <= 3 ? 'top-three' : ''}">${item.position}</span>
+              <span class="team-bar" style="background-color: ${teamColor};"></span>
+              <div class="driver-info">
+                <span class="driver-name">${item.Driver.givenName} ${item.Driver.familyName}</span>
+                <span class="team-name">${teamName}</span>
+              </div>
+            </div>
+            <div class="points-badge">${item.points}<span class="points-unit">PTS</span></div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderNextRaceCard(race) {
+      const container = document.getElementById('next-race-container');
+      const localFullTime = race.raceTime.toLocaleString('zh-TW', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+
+      container.innerHTML = `
+        <div class="next-race-card">
+          <div class="badge">Next Race • Round ${race.round}</div>
+          <div class="race-title">${race.raceName}</div>
+          <div class="race-meta">${race.Circuit.circuitName} ｜ 正賽時間：${localFullTime}</div>
+          <div class="countdown-grid">
+            <div class="time-box"><div class="time-num" id="cd-days">--</div><div class="time-label">天</div></div>
+            <div class="time-box"><div class="time-num" id="cd-hours">--</div><div class="time-label">時</div></div>
+            <div class="time-box"><div class="time-num" id="cd-mins">--</div><div class="time-label">分</div></div>
+            <div class="time-box"><div class="time-num" id="cd-secs">--</div><div class="time-label">秒</div></div>
+          </div>
+        </div>
+      `;
+
+      updateCountdown(race.raceTime);
+      if (countdownInterval) clearInterval(countdownInterval);
+      countdownInterval = setInterval(() => updateCountdown(race.raceTime), 1000);
+    }
+
+    function updateCountdown(targetTime) {
+      const diff = targetTime - new Date();
+      if (diff <= 0) {
+        clearInterval(countdownInterval);
+        initF1Widget();
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const mins = Math.floor((diff / 1000 / 60) % 60);
+      const secs = Math.floor((diff / 1000) % 60);
+
+      document.getElementById('cd-days').innerText = String(days).padStart(2, '0');
+      document.getElementById('cd-hours').innerText = String(hours).padStart(2, '0');
+      document.getElementById('cd-mins').innerText = String(mins).padStart(2, '0');
+      document.getElementById('cd-secs').innerText = String(secs).padStart(2, '0');
+    }
+
+    initF1Widget();
+  </script>
+</body>
+</html>
