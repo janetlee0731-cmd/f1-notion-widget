@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>F1 Telemetry & Standings Widget</title>
+  <title>F1 Telemetry, Drivers & Constructors Widget</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -249,7 +249,7 @@
       letter-spacing: 0.5px;
     }
 
-    /* 分頁切換列 */
+    /* 三分頁切換列 */
     .tab-bar {
       display: flex;
       background: var(--card-bg);
@@ -357,7 +357,7 @@
       white-space: nowrap;
     }
 
-    /* 車手積分榜樣式 */
+    /* 車手與車隊積分榜共用排版 */
     .driver-left {
       display: flex;
       align-items: center;
@@ -447,52 +447,63 @@
       <div class="status-msg">載入 F1 遙測資料中...</div>
     </div>
 
+    <!-- 三分頁切換列 -->
     <div class="tab-bar">
       <button class="tab-btn active" id="tab-schedule" onclick="switchTab('schedule')">賽程表</button>
-      <button class="tab-btn" id="tab-standings" onclick="switchTab('standings')">車手積分榜</button>
+      <button class="tab-btn" id="tab-drivers" onclick="switchTab('drivers')">車手積分榜</button>
+      <button class="tab-btn" id="tab-constructors" onclick="switchTab('constructors')">車隊積分榜</button>
     </div>
 
     <div class="list-panel" id="panel-schedule"></div>
-    <div class="list-panel hidden" id="panel-standings"></div>
+    <div class="list-panel hidden" id="panel-drivers"></div>
+    <div class="list-panel hidden" id="panel-constructors"></div>
   </div>
 
   <script>
     const SCHEDULE_API = 'https://api.jolpi.ca/ergast/f1/current.json';
-    const STANDINGS_API = 'https://api.jolpi.ca/ergast/f1/current/driverStandings.json';
+    const DRIVERS_API = 'https://api.jolpi.ca/ergast/f1/current/driverStandings.json';
+    const CONSTRUCTORS_API = 'https://api.jolpi.ca/ergast/f1/current/constructorStandings.json';
+
     let countdownInterval = null;
     let currentWeekendSessions = [];
     let activeSessionIndex = 0;
 
-    // 若上傳的圖片為其他副檔名（例如 logo.jpg），請修改此處的 src 屬性
+    // 自訂上傳圖片標誌（若副檔名為 .jpg，請相應修改為 logo.jpg）
     const F1_LOGO_HTML = `<img src="logo.png" class="f1-logo" alt="F1 Logo">`;
 
     const TEAM_COLORS = {
-      red_bull: '#3671C6',
-      ferrari: '#E8002D',
       mclaren: '#FF8000',
+      ferrari: '#E8002D',
+      red_bull: '#3671C6',
       mercedes: '#27F4D2',
       aston_martin: '#229971',
       alpine: '#FF87BC',
-      williams: '#64C4FF',
-      rb: '#6692FF',
-      sauber: '#52E252',
-      audi: '#F50537',
       haas: '#B6BABD',
+      rb: '#6692FF',
+      racing_bulls: '#6692FF',
+      williams: '#64C4FF',
+      sauber: '#52E252',
+      kick_sauber: '#52E252',
+      audi: '#F50537',
       cadillac: '#D4AF37'
     };
 
     function switchTab(tabName) {
-      const isSchedule = tabName === 'schedule';
-      document.getElementById('tab-schedule').classList.toggle('active', isSchedule);
-      document.getElementById('tab-standings').classList.toggle('active', !isSchedule);
-      document.getElementById('panel-schedule').classList.toggle('hidden', !isSchedule);
-      document.getElementById('panel-standings').classList.toggle('hidden', isSchedule);
+      const tabs = ['schedule', 'drivers', 'constructors'];
+      tabs.forEach(t => {
+        const isTarget = (t === tabName);
+        const btn = document.getElementById(`tab-${t}`);
+        const panel = document.getElementById(`panel-${t}`);
+        if (btn) btn.classList.toggle('active', isTarget);
+        if (panel) panel.classList.toggle('hidden', !isTarget);
+      });
     }
 
     async function initF1Widget() {
-      const [scheduleRes, standingsRes] = await Promise.allSettled([
+      const [scheduleRes, driversRes, constrRes] = await Promise.allSettled([
         fetch(SCHEDULE_API).then(r => r.json()),
-        fetch(STANDINGS_API).then(r => r.json())
+        fetch(DRIVERS_API).then(r => r.json()),
+        fetch(CONSTRUCTORS_API).then(r => r.json())
       ]);
 
       if (scheduleRes.status === 'fulfilled') {
@@ -503,13 +514,22 @@
           '<div class="status-msg">賽程資料載入失敗，請稍後重新整理。</div>';
       }
 
-      if (standingsRes.status === 'fulfilled') {
-        const lists = standingsRes.value.MRData.StandingsTable.StandingsLists;
+      if (driversRes.status === 'fulfilled') {
+        const lists = driversRes.value.MRData.StandingsTable.StandingsLists;
         const standings = lists.length > 0 ? lists[0].DriverStandings : [];
-        renderStandings(standings);
+        renderDriverStandings(standings);
       } else {
-        document.getElementById('panel-standings').innerHTML =
-          '<div class="status-msg">積分榜資料載入失敗。</div>';
+        document.getElementById('panel-drivers').innerHTML =
+          '<div class="status-msg">車手積分榜載入失敗。</div>';
+      }
+
+      if (constrRes.status === 'fulfilled') {
+        const lists = constrRes.value.MRData.StandingsTable.StandingsLists;
+        const standings = lists.length > 0 ? lists[0].ConstructorStandings : [];
+        renderConstructorStandings(standings);
+      } else {
+        document.getElementById('panel-constructors').innerHTML =
+          '<div class="status-msg">車隊積分榜載入失敗。</div>';
       }
     }
 
@@ -683,11 +703,11 @@
       document.getElementById('cd-secs').innerText = String(secs).padStart(2, '0');
     }
 
-    function renderStandings(standings) {
-      const container = document.getElementById('panel-standings');
-
+    // 車手積分榜渲染
+    function renderDriverStandings(standings) {
+      const container = document.getElementById('panel-drivers');
       if (!standings || standings.length === 0) {
-        container.innerHTML = '<div class="status-msg">目前尚無本賽季積分紀錄。</div>';
+        container.innerHTML = '<div class="status-msg">目前尚無本賽季車手積分紀錄。</div>';
         return;
       }
 
@@ -706,6 +726,39 @@
               <div class="driver-info">
                 <span class="driver-name">${item.Driver.givenName} ${item.Driver.familyName}</span>
                 <span class="team-name">${teamName}</span>
+              </div>
+            </div>
+            <div class="points-badge mono">${item.points}<span class="points-unit">PTS</span></div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 車隊積分榜渲染
+    function renderConstructorStandings(standings) {
+      const container = document.getElementById('panel-constructors');
+      if (!standings || standings.length === 0) {
+        container.innerHTML = '<div class="status-msg">目前尚無本賽季車隊積分紀錄。</div>';
+        return;
+      }
+
+      container.innerHTML = standings.map(item => {
+        const pos = parseInt(item.position, 10);
+        const constructor = item.Constructor;
+        const teamId = constructor ? constructor.constructorId : '';
+        const teamColor = TEAM_COLORS[teamId] || '#787774';
+        const teamName = constructor ? constructor.name : '';
+        const nationality = constructor ? constructor.nationality : '';
+        const posClass = pos <= 3 ? `pos-${pos}` : '';
+
+        return `
+          <div class="list-item">
+            <div class="driver-left">
+              <span class="pos-badge mono ${posClass}">${item.position}</span>
+              <span class="team-bar" style="background-color: ${teamColor};"></span>
+              <div class="driver-info">
+                <span class="driver-name">${teamName}</span>
+                <span class="team-name">${nationality} • ${item.wins} 勝</span>
               </div>
             </div>
             <div class="points-badge mono">${item.points}<span class="points-unit">PTS</span></div>
