@@ -87,30 +87,17 @@
     }
 
     .dashboard-title {
-      font-size: 13px;
-      font-weight: 900;
-      letter-spacing: 1px;
-      color: var(--f1-red);
-      text-transform: uppercase;
       display: inline-flex;
       align-items: center;
-      gap: 7px;
     }
 
+    /* 官方 F1 SVG Logo */
     .f1-official-logo {
-  height: 20px;          /* 官方 Logo 高度，符合卡片標題列比例 */
-  width: auto;
-  object-fit: contain;
-  display: block;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
-}
-    
-    .f1-diamond {
-      display: inline-block;
-      width: 8px;
-      height: 8px;
-      background: var(--f1-red);
-      transform: rotate(45deg);
+      height: 20px;
+      width: auto;
+      object-fit: contain;
+      display: block;
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
     }
 
     .round-pill {
@@ -371,7 +358,7 @@
       white-space: nowrap;
     }
 
-    /* 隊標圖示與 F1 官方縮寫隊徽樣式（放大至 24px） */
+    /* 隊標圖示與 F1 官方縮寫隊徽樣式 */
     .team-logo-container {
       display: inline-flex;
       align-items: center;
@@ -389,7 +376,6 @@
       filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
     }
 
-    /* 智慧防破圖縮寫徽章（Fallback） */
     .team-badge-fallback {
       font-family: 'Formula1', monospace;
       font-size: 8.5px;
@@ -513,7 +499,6 @@
   </div>
 
   <script>
-    // 車隊塗裝色彩字典
     const TEAM_COLORS = {
       ferrari: '#E8002D',
       mclaren: '#FF8000',
@@ -531,7 +516,6 @@
       cadillac: '#D4AF37'
     };
 
-    // 多重圖片備援字典：logos/ 圖檔 -> Issue 圖床網址 -> 根目錄備援
     const TEAM_INFO = {
       ferrari: {
         code: 'SF', color: '#E8002D', textColor: '#FFFFFF',
@@ -583,7 +567,6 @@
       cadillac:     { code: 'CAD',   color: '#D4AF37', textColor: '#000000', logos: ['logos/cadillac.png', 'cadillac.png'] }
     };
 
-    // 圖片載入失敗時切換清單中的下一個備援網址
     function handleLogoError(img) {
       const urls = (img.dataset.urls || '').split('|').filter(Boolean);
       const nextIdx = parseInt(img.dataset.idx || '0', 10) + 1;
@@ -595,7 +578,6 @@
       }
     }
 
-    // 隊標產生器（含縮寫防破圖徽章）
     function generateTeamBadge(teamId) {
       const info = TEAM_INFO[teamId] || { code: 'F1', color: '#787774', textColor: '#FFFFFF', logos: [] };
       const fallbackBadge = `<span class="team-badge-fallback" style="background-color: ${info.color}; color: ${info.textColor};">${info.code}</span>`;
@@ -703,17 +685,11 @@
         const isCompleted = raceTime < now;
         let isNext = false;
 
-        if (nextRace) {
-        renderNextRaceCard(nextRace);
-      } else {
-        document.getElementById('next-race-container').innerHTML =
-          `<div class="next-race-card">
-            <div class="brand-bar">
-              <img src="https://media.formula1.com/image/upload/f_auto,c_limit,w_195,q_auto/etc/designs/fom-website/images/svg/f1-logo.svg" alt="F1" class="f1-official-logo" referrerpolicy="no-referrer">
-            </div>
-            <div class="race-title">本賽季已全數完賽</div>
-          </div>`;
-      }
+        // 正確判定尚未完賽的第一場為下一站賽事
+        if (!isCompleted && !nextRace) {
+          nextRace = { ...race, raceTime };
+          isNext = true;
+        }
 
         const localDateStr = raceTime.toLocaleDateString('zh-TW', {
           month: '2-digit',
@@ -747,11 +723,23 @@
         panelEl.scrollTop = Math.max(0, nextRowEl.offsetTop - 75);
       }
 
+      // 判定主卡片內容
       if (nextRace) {
         renderNextRaceCard(nextRace);
       } else {
         document.getElementById('next-race-container').innerHTML =
-          `<div class="next-race-card"><div class="dashboard-title"><span class="f1-diamond"></span>FORMULA 1</div><div class="race-title">本賽季已全數完賽</div></div>`;
+          `<div class="next-race-card">
+            <div class="brand-bar">
+              <div class="dashboard-title">
+                <img src="https://media.formula1.com/image/upload/f_auto,c_limit,w_195,q_auto/etc/designs/fom-website/images/svg/f1-logo.svg"
+                     alt="Formula 1"
+                     class="f1-official-logo"
+                     referrerpolicy="no-referrer"
+                     onerror="this.onerror=null; this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/F1.svg/320px-F1.svg.png';">
+              </div>
+            </div>
+            <div class="race-title">本賽季已全數完賽</div>
+          </div>`;
       }
     }
 
@@ -792,11 +780,11 @@
         <div class="next-race-card">
           <div class="brand-bar">
             <div class="dashboard-title">
-             <img src="https://media.formula1.com/image/upload/f_auto,c_limit,w_195,q_auto/etc/designs/fom-website/images/svg/f1-logo.svg"
-                 alt="Formula 1"
-                 class="f1-official-logo"
-                 referrerpolicy="no-referrer"
-                 onerror="this.onerror=null; this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/F1.svg/320px-F1.svg.png';">
+              <img src="https://media.formula1.com/image/upload/f_auto,c_limit,w_195,q_auto/etc/designs/fom-website/images/svg/f1-logo.svg"
+                   alt="Formula 1"
+                   class="f1-official-logo"
+                   referrerpolicy="no-referrer"
+                   onerror="this.onerror=null; this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/F1.svg/320px-F1.svg.png';">
             </div>
             <span class="round-pill mono">${race.season} • ROUND ${String(race.round).padStart(2, '0')}</span>
           </div>
@@ -856,7 +844,6 @@
       document.getElementById('cd-secs').innerText = String(secs).padStart(2, '0');
     }
 
-    // 車手積分榜（隊名前方加入隊標）
     function renderDriverStandings(standings) {
       const container = document.getElementById('panel-drivers');
       if (!standings || standings.length === 0) {
@@ -889,7 +876,6 @@
       }).join('');
     }
 
-    // 車隊積分榜（車隊名稱前方加入隊標）
     function renderConstructorStandings(standings) {
       const container = document.getElementById('panel-constructors');
       if (!standings || standings.length === 0) {
